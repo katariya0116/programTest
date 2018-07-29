@@ -41,11 +41,13 @@
     <FxCompile Include="res\shader\shader_vs.hlsl">
       <Filter>res\shader</Filter>
     </FxCompile>
-    <FxCompile Include="res\shader\shader_def.hlsl">
-      <Filter>res\shader</Filter>
-    </FxCompile>
     <FxCompile Include="res\shader\shader_ps.hlsl">
       <Filter>res\shader</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="res\shader\shader_def.h">
+      <Filter>res\shader</Filter>
+    </Resource>
   </ItemGroup>
 </Project>

@@ -130,11 +130,10 @@
     <ClInclude Include="src\window.h" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="res\shader\shader_def.h">
+    <FxCompile Include="res\shader\shader_def.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Effect</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
-      <FileType>Document</FileType>
-    </Resource>
+    </FxCompile>
     <FxCompile Include="res\shader\shader_ps.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>

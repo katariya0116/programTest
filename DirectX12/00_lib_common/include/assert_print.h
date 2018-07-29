@@ -1,6 +1,9 @@
 #pragma once
 
 #include "type.h"
+#include <cassert>
+
+LIB_KATA_BEGIN
 
 template<typename ... ARGS>
 static void Print(const c8* _fmt, ARGS const& ...);
@@ -29,3 +32,4 @@ static void PrintWarning(const c8* _fmt, ARGS const& ...);
 
 #endif
 
+LIB_KATA_END

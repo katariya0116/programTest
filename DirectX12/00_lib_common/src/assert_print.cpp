@@ -1,6 +1,8 @@
 #include "assert_print.h"
 #include <stdarg.h>
 
+LIB_KATA_BEGIN
+
 template<typename ... ARGS>
 void Print(const c8* _fmt, ARGS const& ... args)
 {
@@ -18,3 +20,5 @@ void PrintError(const c8* _fmt, ARGS const& ... args)
 {
 	printf(_fmt, args...);
 }
+
+LIB_KATA_END

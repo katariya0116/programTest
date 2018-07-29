@@ -17,6 +17,12 @@
     <ClInclude Include="include\assert_print.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="include\lib_common.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\class.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\assert_print.cpp">

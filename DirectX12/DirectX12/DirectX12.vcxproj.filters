@@ -44,10 +44,8 @@
     <FxCompile Include="res\shader\shader_ps.hlsl">
       <Filter>res\shader</Filter>
     </FxCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="res\shader\shader_def.h">
+    <FxCompile Include="res\shader\shader_def.hlsli">
       <Filter>res\shader</Filter>
-    </Resource>
+    </FxCompile>
   </ItemGroup>
 </Project>

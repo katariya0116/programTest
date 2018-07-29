@@ -41,7 +41,7 @@
     <FxCompile Include="res\shader\shader_vs.hlsl">
       <Filter>res\shader</Filter>
     </FxCompile>
-    <FxCompile Include="res\shader\shader_ps.hlsl">
+    <FxCompile Include="res\shader\shader_def.hlsl">
       <Filter>res\shader</Filter>
     </FxCompile>
     <FxCompile Include="res\shader\shader_def.hlsli">

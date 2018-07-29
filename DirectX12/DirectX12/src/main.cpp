@@ -1,6 +1,6 @@
 #include "type.h"
 #include "window.h"
-#include "renderer_dx12.h"
+#include "renderer/renderer_utility.h"
 
 namespace {
 	constexpr s32 WINDOW_WIDTH = 640;
@@ -27,10 +27,11 @@ s32 WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, s32 nS
 	}
 	
 	// ÉåÉìÉ_ÉâÅ[ÇÃèâä˙âª
-	INIT_RENDERER_DATA initData;
-	initData.hWnd = window.GetHwnd();
+	INIT_RENDER_PARAM initData;
+	initData.type = RENDERER_TYPE::DX12;
 	initData.width = WINDOW_WIDTH;
 	initData.height = WINDOW_HEIGHT;
+	initData.windowMode = true;
 	ret = CRenderUtility::Initialize(initData);
 	if (!ret)
 	{

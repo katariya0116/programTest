@@ -1,85 +1,6 @@
 #include "renderer_dx12.h"
 
-#include <windows.h>
-
-#include <d3d12.h>
-#include <d3d12shader.h>
-#include <dxgi1_4.h>
-#include <d3dcompiler.h>
-
-#include <wrl/client.h>
-
-using namespace Microsoft::WRL;
-
-class CRenderer
-{
-public:
-	static const u32 RTV_NUM = 2;
-public:
-	CRenderer();
-	virtual ~CRenderer();
-
-public:
-	b8 Initialize(HWND _hwnd, s32 _width, s32 _height);
-	void Finalize();
-
-public:
-	void BeginDraw();
-	void EndDraw();
-
-public:
-
-private:
-	HRESULT __CreateFactory();
-	HRESULT __CreateDevice();
-	HRESULT __CreateCommandQueue();
-	HRESULT __CreateSwapChain();
-	HRESULT __CreateRenderTargetView();
-	HRESULT __CreateDepthStencilBuffer();
-	HRESULT __CreateCommandList();
-	HRESULT __CreateRootSignature();
-
-	HRESULT __CreatePipelineStateObject();
-
-	HRESULT __WaitForPreviousFrame();
-	HRESULT __SetResourceBarrier(D3D12_RESOURCE_STATES BeforeState, D3D12_RESOURCE_STATES AfterState);
-	HRESULT __PopulateCommandList();
-
-private:
-	HWND						m_hWnd;
-	ComPtr<IDXGIFactory4>		m_factory;
-	ComPtr<IDXGIAdapter3>		m_adapter;
-	ComPtr<ID3D12Device>		m_device;
-	ComPtr<ID3D12CommandQueue>	m_cmdQue;
-	HANDLE						m_fenceHdl;
-	ComPtr<ID3D12Fence>			m_queueFence;
-	ComPtr<IDXGISwapChain3>		m_swapChain;
-
-	ComPtr<ID3D12GraphicsCommandList>	m_commandList;
-	ComPtr<ID3D12CommandAllocator>		m_commandAllocator;
-
-	ComPtr<ID3D12Resource>				m_renderTrg[RTV_NUM];
-	ComPtr<ID3D12DescriptorHeap>		m_descriptHeapRtv;
-	D3D12_CPU_DESCRIPTOR_HANDLE			m_descriptHdlRtv[RTV_NUM];
-
-	ComPtr<ID3D12Resource>				m_depthBuffer;
-	ComPtr<ID3D12DescriptorHeap>		m_descriptHeapDepth;
-	D3D12_CPU_DESCRIPTOR_HANDLE			m_descriptHdlDepth;
-
-	ComPtr<ID3D12PipelineState>		m_pipelineState;
-	ComPtr<ID3D12RootSignature>		m_rootSignature;
-
-	D3D12_RECT					m_scissorRect;
-	D3D12_VIEWPORT				m_viewPort;
-
-	s32							m_windowWidth;
-	s32							m_windowHeight;
-
-	u64 m_frames;
-	u32 m_rtvIndex;
-};
-
-CRenderer::CRenderer()
+CRendererDx12::CRendererDx12()
 {
 	m_factory = nullptr;
 	m_adapter = nullptr;
@@ -107,15 +28,15 @@ CRenderer::CRenderer()
 
 }
 
-CRenderer::~CRenderer()
+CRendererDx12::~CRendererDx12()
 {
 }
 
-b8 CRenderer::Initialize(HWND _hwnd, s32 _width, s32 _height)
+b8 CRendererDx12::Initialize(const CRendererDx12::INIT_PARAM& _param)
 {
-	m_hWnd = _hwnd;
-	m_windowWidth = _width;
-	m_windowHeight = _height;
+	m_hWnd = _param.hwnd;
+	m_windowWidth = _param.width;
+	m_windowHeight = _param.height;
 
 	HRESULT hr;
 	hr = __CreateFactory();
@@ -182,22 +103,36 @@ b8 CRenderer::Initialize(HWND _hwnd, s32 _width, s32 _height)
 	return true;
 }
 
-void CRenderer::Finalize()
+void CRendererDx12::Finalize()
 {
+	// イベントハンドルを閉じる.
+	CloseHandle(m_fenceHdl);
+	m_fenceHdl = nullptr;
 
+	for (UINT i = 0; i<RTV_NUM; ++i)
+	{
+		m_renderTrg[i].Reset();
+	}
+
+	//m_pDepthStencil.Reset();
+
+	m_swapChain.Reset();
+	m_queueFence.Reset();
+	m_commandList.Reset();
+	m_adapter.Reset();
+	m_cmdQue.Reset();
+	m_device.Reset();
 }
 
 // 描画開始
-void CRenderer::BeginDraw()
+void CRendererDx12::BeginDraw(const IRenderer::Color& _color)
 {
-	f32 clear_color[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
-
 	//リソースの状態をプレゼント用からレンダーターゲット用に変更
 	__SetResourceBarrier(D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	//深度バッファとレンダーターゲットのクリア
 	m_commandList->ClearDepthStencilView(m_descriptHdlDepth, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-	m_commandList->ClearRenderTargetView(m_descriptHdlRtv[m_rtvIndex], clear_color, 0, nullptr);
+	m_commandList->ClearRenderTargetView(m_descriptHdlRtv[m_rtvIndex], _color.color, 0, nullptr);
 
 	//ルートシグネチャの設定
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
@@ -213,7 +148,7 @@ void CRenderer::BeginDraw()
 	//m_commandList->SetPipelineState(pipeline_state_.Get());
 }
 
-void CRenderer::EndDraw()
+void CRendererDx12::EndDraw()
 {
 	HRESULT hr;
 
@@ -252,7 +187,15 @@ void CRenderer::EndDraw()
 
 }
 
-HRESULT CRenderer::__CreateFactory()
+// デバイスの取得
+CRendererDx12::DEVICE* CRendererDx12::GetDevice()
+{
+	return m_device.Get();
+}
+
+//========================================================================================================================
+
+HRESULT CRendererDx12::__CreateFactory()
 {
 	HRESULT hr{};
 	UINT flag{};
@@ -260,7 +203,7 @@ HRESULT CRenderer::__CreateFactory()
 	//デバッグモードの場合はデバッグレイヤーを有効にする
 #if defined(_DEBUG)
 	{
-		ComPtr<ID3D12Debug> debug;
+		WinShPtr<ID3D12Debug> debug;
 		hr = D3D12GetDebugInterface(IID_PPV_ARGS(debug.GetAddressOf()));
 		if (FAILED(hr)) {
 			return hr;
@@ -277,7 +220,7 @@ HRESULT CRenderer::__CreateFactory()
 	return hr;
 }
 
-HRESULT CRenderer::__CreateDevice()
+HRESULT CRendererDx12::__CreateDevice()
 {
 	HRESULT hr{};
 
@@ -294,7 +237,7 @@ HRESULT CRenderer::__CreateDevice()
 	return hr;
 }
 
-HRESULT CRenderer::__CreateCommandQueue()
+HRESULT CRendererDx12::__CreateCommandQueue()
 {
 	HRESULT hr{};
 	D3D12_COMMAND_QUEUE_DESC command_queue_desc{};
@@ -319,11 +262,11 @@ HRESULT CRenderer::__CreateCommandQueue()
 	return hr;
 }
 
-HRESULT CRenderer::__CreateSwapChain()
+HRESULT CRendererDx12::__CreateSwapChain()
 {
 	HRESULT hr{};
 	DXGI_SWAP_CHAIN_DESC swap_chain_desc{};
-	ComPtr<IDXGISwapChain> swap_chain{};
+	WinShPtr<IDXGISwapChain> swap_chain{};
 
 	swap_chain_desc.BufferDesc.Width = m_windowWidth;
 	swap_chain_desc.BufferDesc.Height = m_windowHeight;
@@ -358,7 +301,7 @@ HRESULT CRenderer::__CreateSwapChain()
 	return S_OK;
 }
 
-HRESULT CRenderer::__CreateRenderTargetView()
+HRESULT CRendererDx12::__CreateRenderTargetView()
 {
 	HRESULT hr{};
 	D3D12_DESCRIPTOR_HEAP_DESC heap_desc{};
@@ -391,7 +334,7 @@ HRESULT CRenderer::__CreateRenderTargetView()
 	return hr;
 }
 
-HRESULT CRenderer::__CreateDepthStencilBuffer()
+HRESULT CRendererDx12::__CreateDepthStencilBuffer()
 {
 	HRESULT hr;
 
@@ -455,7 +398,7 @@ HRESULT CRenderer::__CreateDepthStencilBuffer()
 	return hr;
 }
 
-HRESULT CRenderer::__CreateCommandList()
+HRESULT CRendererDx12::__CreateCommandList()
 {
 	HRESULT hr;
 
@@ -471,12 +414,12 @@ HRESULT CRenderer::__CreateCommandList()
 	return hr;
 }
 
-HRESULT CRenderer::__CreateRootSignature() 
+HRESULT CRendererDx12::__CreateRootSignature() 
 {
 	HRESULT hr{};
 	D3D12_ROOT_PARAMETER		root_parameters[1]{};
 	D3D12_ROOT_SIGNATURE_DESC	root_signature_desc{};
-	ComPtr<ID3DBlob> blob{};
+	WinShPtr<ID3DBlob> blob{};
 
 	//定数バッファをデスクリプタを介さずに渡すように設定	
 	root_parameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
@@ -500,7 +443,7 @@ HRESULT CRenderer::__CreateRootSignature()
 	return hr;
 }
 
-HRESULT CRenderer::__WaitForPreviousFrame()
+HRESULT CRendererDx12::__WaitForPreviousFrame()
 {
 	HRESULT hr;
 
@@ -526,7 +469,7 @@ HRESULT CRenderer::__WaitForPreviousFrame()
 	return S_OK;
 }
 
-HRESULT CRenderer::__SetResourceBarrier(D3D12_RESOURCE_STATES BeforeState, D3D12_RESOURCE_STATES AfterState)
+HRESULT CRendererDx12::__SetResourceBarrier(D3D12_RESOURCE_STATES BeforeState, D3D12_RESOURCE_STATES AfterState)
 {
 	D3D12_RESOURCE_BARRIER resource_barrier{};
 
@@ -541,7 +484,7 @@ HRESULT CRenderer::__SetResourceBarrier(D3D12_RESOURCE_STATES BeforeState, D3D12
 	return S_OK;
 }
 
-HRESULT CRenderer::__PopulateCommandList()
+HRESULT CRendererDx12::__PopulateCommandList()
 {
 	HRESULT hr;
 
@@ -576,29 +519,4 @@ HRESULT CRenderer::__PopulateCommandList()
 	hr = m_commandList->Close();
 
 	return hr;
-}
-
-//============================================================================================================
-//
-//============================================================================================================
-static CRenderer s_inst;
-
-b8 CRenderUtility::Initialize(const INIT_RENDERER_DATA& _data)
-{
-	return s_inst.Initialize(_data.hWnd, _data.width, _data.height);
-}
-
-void CRenderUtility::Finalize()
-{
-	s_inst.Finalize();
-}
-
-void CRenderUtility::Begin()
-{
-	s_inst.BeginDraw();
-}
-
-void CRenderUtility::End()
-{
-	s_inst.EndDraw();
 }

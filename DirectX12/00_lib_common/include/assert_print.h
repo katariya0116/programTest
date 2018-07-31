@@ -17,13 +17,14 @@ static void PrintWarning(const c8* _fmt, ARGS const& ...);
 
 #ifdef _DEBUG
 
-#define PRINT(format, ...)			Print(format, __VA_ARGS__)
-#define PRINT_ERROR(format, ...)	PrintError(format, __VA_ARGS__)
-#define PRINT_WARNING(format, ...)	PrintWarning(format, __VA_ARGS__)
+#define PRINT(format, ...)			LIB_KATA_NAMESPACE::Print(format, __VA_ARGS__)
+#define PRINT_ERROR(format, ...)	LIB_KATA_NAMESPACE::PrintError(format, __VA_ARGS__)
+#define PRINT_WARNING(format, ...)	LIB_KATA_NAMESPACE::PrintWarning(format, __VA_ARGS__)
 
 #define Assert(x) assert(x)
 
 #else
+
 #define PRINT(format, ...)			
 #define PRINT_ERROR(format, ...)	
 #define PRINT_WARNING(format, ...)	
@@ -33,3 +34,5 @@ static void PrintWarning(const c8* _fmt, ARGS const& ...);
 #endif
 
 LIB_KATA_END
+
+#include "assert_print.inl"

@@ -33,10 +33,21 @@ public:
 	///ウィンドウハンドル取得
 	HWND GetHwnd() const { return m_hwnd; };
 
+#ifdef _DEBUG
+public:
+	void ShowConsoleWin();
+	void CloseConsoleWin();
+#endif
+
 public:
 	static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 private:
 	HWND m_hwnd;
 	const c8* m_className;
+
+#ifdef _DEBUG
+	s32 m_hConsole;
+#endif
+
 };

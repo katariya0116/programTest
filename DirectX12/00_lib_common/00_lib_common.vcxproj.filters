@@ -25,7 +25,12 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\assert_print.cpp">
+    <None Include="include\assert_print.inl">
+      <Filter>include</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\class.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

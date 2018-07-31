@@ -1,4 +1,6 @@
 #include "window.h"
+#include <io.h>
+#include <Fcntl.h>
 
 CWindow::CWindow()
 {
@@ -10,6 +12,10 @@ CWindow::~CWindow()
 
 b8 CWindow::Initialize(const CWindow::INIT_PARAM& _initParam)
 {
+#ifdef _DEBUG
+	ShowConsoleWin();
+#endif
+
 	m_className = _initParam.className;
 
 	WNDCLASSEX	wc{};
@@ -89,9 +95,35 @@ b8 CWindow::Update()
 
 void CWindow::Finalize()
 {
+#ifdef _DEBUG
+	CloseConsoleWin();
+#endif
+
 	UnregisterClass(m_className, NULL);
 	m_hwnd = NULL;
 }
+
+
+#ifdef _DEBUG
+
+void CWindow::ShowConsoleWin()
+{
+	m_hConsole = 0;
+
+	AllocConsole();
+	
+	FILE* fp;
+	freopen_s(&fp, "CONOUT$", "w", stdout);
+	freopen_s(&fp, "CONIN$", "r", stdin);
+
+}
+
+void CWindow::CloseConsoleWin()
+{
+	FreeConsole();
+}
+
+#endif
 
 
 LRESULT CALLBACK CWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 

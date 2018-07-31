@@ -1,6 +1,7 @@
 #include "type.h"
 #include "window.h"
 #include "renderer/renderer_utility.h"
+#include "math/vector.h"
 
 namespace {
 	constexpr s32 WINDOW_WIDTH = 640;

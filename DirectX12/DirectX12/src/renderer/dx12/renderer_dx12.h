@@ -43,7 +43,9 @@ public:
 	void Finalize() override;
 
 public:
+	
 	void BeginDraw(const IRenderer::Color& _color) override;
+
 	void EndDraw() override;
 
 public:

@@ -4,7 +4,7 @@
 #define __TYPE_H__
 
 // ライブラリネームスペース
-#define LIB_KATA_NAMESPACE KATARIYA_LIB
+#define LIB_KATA_NAMESPACE kataLib
 #define LIB_KATA_NAMESPACE_NAME #LIB_KATA_NAMESPACE
 #define LIB_KATA_BEGIN namespace LIB_KATA_NAMESPACE {
 #define LIB_KATA_END };

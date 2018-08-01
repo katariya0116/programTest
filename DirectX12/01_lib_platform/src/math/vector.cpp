@@ -4,6 +4,9 @@
 
 LIB_KATA_BEGIN
 
+//===================================================================================================
+// CVector2
+
 // ÉxÉNÉgÉãíËêî
 const CVector2 CVector2::Zero	= CVector2(0.0f, 0.0f);
 const CVector2 CVector2::Up		= CVector2(0.0f, 1.0f);

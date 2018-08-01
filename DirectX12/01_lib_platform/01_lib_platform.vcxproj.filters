@@ -18,9 +18,15 @@
     <ClInclude Include="include\math\vector.h">
       <Filter>include\math</Filter>
     </ClInclude>
+    <ClInclude Include="include\math\matrix.h">
+      <Filter>include\math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\math\vector.cpp">
+      <Filter>src\math</Filter>
+    </ClCompile>
+    <ClCompile Include="src\math\matrix.cpp">
       <Filter>src\math</Filter>
     </ClCompile>
   </ItemGroup>

@@ -76,6 +76,7 @@ public:
 
 public:
 	const f32* Get() const { return pos; }
+	f32* Get() { return pos; }
 	f32 GetX() const { return x; }
 	f32 GetY() const { return y; }
 	f32 GetZ() const { return z; }
@@ -140,6 +141,7 @@ public:
 
 public:
 	const f32* Get() const { return pos; }
+	f32* Get() { return pos; }
 	f32 GetX() const { return x; }
 	f32 GetY() const { return y; }
 	f32 GetZ() const { return z; }

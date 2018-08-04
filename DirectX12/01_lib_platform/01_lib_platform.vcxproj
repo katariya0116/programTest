@@ -97,9 +97,11 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\math\matrix.h" />
     <ClInclude Include="include\math\vector.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\math\matrix.cpp" />
     <ClCompile Include="src\math\vector.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

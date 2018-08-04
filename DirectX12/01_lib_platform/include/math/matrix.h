@@ -61,6 +61,15 @@ public:
 	// 行列によるベクトル変化
 	static CVector3& Transform(CVector3& _ret, const CMatrix44& _m0, const CVector3& _vec);
 	static CVector4& Transform(CVector4& _ret, const CMatrix44& _m0, const CVector4& _vec);
+
+	// 転置行列
+	static CMatrix44& Transpose(CMatrix44& _ret, const CMatrix44& _m0);
+	
+	// 逆行列
+	static CMatrix44& Inverse(CMatrix44& _ret, const CMatrix44& _m0);
+
+	// プリント
+	static void PrintMatrix(const CMatrix44& _mtx);
 };
 
 LIB_KATA_END

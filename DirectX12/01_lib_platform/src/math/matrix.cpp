@@ -251,12 +251,97 @@ CVector4& MatrixUtil::Transform(CVector4& _ret, const CMatrix44& _m0, const CVec
 	u32 num = 4;
 	for (u32 idx = 0; idx < num; ++idx)
 	{
+		_ret[idx] = VectorUtil::Dot(_m0[idx], _vec);
+	}
+	return _ret;
+}
+
+// 転置
+CMatrix44& MatrixUtil::Transpose(CMatrix44& _ret, const CMatrix44& _m0)
+{
+	u32 num = 4;
+	for (u32 idx = 0; idx < num; ++idx)
+	{
 		for (u32 idx2 = 0; idx2 < num; ++idx2)
 		{
-			_ret[idx] += _m0[idx][idx2] * _vec[idx2];
+			_ret[idx][idx2] = _m0[idx2][idx];
 		}
 	}
 	return _ret;
+}
+
+// 逆行列
+CMatrix44& MatrixUtil::Inverse(CMatrix44& _ret, const CMatrix44& _m0)
+{
+	// 戻り値を単位行列
+	Identity(_ret);
+	CMatrix44 gm = _m0;
+
+	u32 num = 4;
+	for (u32 colum = 0; colum < num; ++colum)
+	{
+		u32 pivotRow = 0;
+		f32 max = 0.0f;
+
+		// ピボットの選定
+		// 前の行は終わってるので次の項目からいく
+		for (u32 idx2 = colum; idx2 < num; ++idx2)
+		{
+			if (fabs(gm[idx2][colum]) > max)
+			{
+				max = fabs(gm[idx2][colum]);
+				pivotRow = idx2;
+			}
+		}
+		if (max == 0.0) { return _ret; }
+
+		// 対角線以外なら入れ替え
+		if (colum != pivotRow) 
+		{
+			// 結果と入ってきた行列どちらも入れ替え
+			for (u32 i = 0; i < num; ++i)
+			{
+				f32 temp = gm[colum][i];
+				gm[colum][i] = gm[pivotRow][i];
+				gm[pivotRow][i] = temp;
+				
+				temp = _ret[colum][i];
+				_ret[colum][i] = _ret[pivotRow][i];
+				_ret[pivotRow][i] = temp;
+			}
+		}
+
+		// 対角成分を1,0にして他を合わす
+		f32 invPivot = 1.0f / gm[colum][colum];
+		for (u32 j = 0; j < num; ++j) 
+		{
+			gm[colum][j] *= invPivot;
+			_ret[colum][j] *= invPivot;
+		}
+
+		// 最終的に逆行列にするためピボット列を０にしていく（対角線除く）
+		for (u32 i = 0; i < num; ++i)
+		{
+			if (i == colum) { continue; }
+
+			f32 temp = gm[i][colum];
+			for (u32 j = 0; j < num; ++j)
+			{
+				gm[i][j] -= temp * gm[colum][j];
+				_ret[i][j] -= temp * _ret[colum][j];
+			}
+		}
+	}
+
+	return _ret;
+}
+
+void MatrixUtil::PrintMatrix(const CMatrix44& _mtx)
+{
+	for (u32 idx = 0; idx < 4; ++idx)
+	{
+		PRINT("%d: %f, %f, %f, %f\n", idx, _mtx[idx][0], _mtx[idx][1], _mtx[idx][2], _mtx[idx][3]);
+	}
 }
 
 LIB_KATA_END

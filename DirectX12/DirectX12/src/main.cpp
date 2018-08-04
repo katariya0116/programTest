@@ -2,12 +2,15 @@
 #include "window.h"
 #include "renderer/renderer_utility.h"
 #include "math/vector.h"
+#include "math/matrix.h"
 
 namespace {
 	constexpr s32 WINDOW_WIDTH = 640;
 	constexpr s32 WINDOW_HEIGHT = 480;
 	constexpr c8 WND_CLASS_NAME[] = "DirectX12";
 }
+
+using namespace LIB_KATA_NAMESPACE;
 
 s32 WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, s32 nShowCmd)
 {

@@ -214,16 +214,18 @@ CMatrix44& MatrixUtil::SetTransZ(CMatrix44& _m, const f32 _vec)
 CMatrix44& MatrixUtil::Mul(CMatrix44& _ret, const CMatrix44& _m0, const CMatrix44& _m1)
 {
 	u32 num = 4;
+	CMatrix44 temp;
 	for (u32 idx = 0; idx < num; ++idx)
 	{
 		for (u32 idx2 = 0; idx2 < num; ++idx2)
 		{
 			for (u32 idx3 = 0; idx3 < num; ++idx3)
 			{
-				_ret[idx][idx2] += _m0[idx][idx3] * _m1[idx3][idx2];
+				temp[idx][idx2] += _m0[idx][idx3] * _m1[idx3][idx2];
 			}
 		}
 	}
+	_ret = temp;
 	return _ret;
 }
 
@@ -334,6 +336,124 @@ CMatrix44& MatrixUtil::Inverse(CMatrix44& _ret, const CMatrix44& _m0)
 	}
 
 	return _ret;
+}
+
+void MatrixUtil::CreateLookAt(const CVector3& _cameraPosition, const CVector3& _cameraTarget, const CVector3& _cameraUpVector, CMatrix44& _result)
+{
+	CVector3 zaxis = _cameraPosition - _cameraTarget;
+	zaxis = VectorUtil::Normalize(zaxis);
+
+	CVector3 xaxis = VectorUtil::Cross(_cameraUpVector, zaxis);
+	xaxis = VectorUtil::Normalize(xaxis);
+
+	CVector3 yaxis = VectorUtil::Cross(zaxis, xaxis);
+	yaxis = VectorUtil::Normalize(yaxis);
+
+	_result[0][0] = xaxis.GetX();
+	_result[0][1] = yaxis.GetX();
+	_result[0][2] = zaxis.GetX();
+	_result[0][3] = 0.0f;
+
+	_result[1][0] = xaxis.GetY();
+	_result[1][1] = yaxis.GetY();
+	_result[1][2] = zaxis.GetY();
+	_result[1][3] = 0.0f;
+
+	_result[2][0] = xaxis.GetZ();
+	_result[2][1] = yaxis.GetZ();
+	_result[2][2] = zaxis.GetZ();
+	_result[2][3] = 0.0f;
+
+	_result[3][0] = -VectorUtil::Dot(xaxis, _cameraPosition);
+	_result[3][1] = -VectorUtil::Dot(yaxis, _cameraPosition);
+	_result[3][2] = -VectorUtil::Dot(zaxis, _cameraPosition);
+	_result[3][3] = 1.0f;
+}
+
+void MatrixUtil::CreatePerspective(const f32 _width, const f32 _height, const f32 _nearClip, const f32 _farClip, CMatrix44& _result)
+{
+	Assert(_width != 0.0f);
+	Assert(_height != 0.0f);
+	register f32 diff = _nearClip - _farClip;
+	Assert(diff != 0.0f);
+
+	_result[0][0] = 2.0f * _nearClip / _width;
+	_result[0][1] = 0.0f;
+	_result[0][2] = 0.0f;
+	_result[0][3] = 0.0f;
+
+	_result[1][0] = 0.0f;
+	_result[1][1] = 2.0f * _nearClip / _height;
+	_result[1][2] = 0.0f;
+	_result[1][3] = 0.0f;
+
+	_result[2][0] = 0.0f;
+	_result[2][1] = 0.0f;
+	_result[2][2] = _farClip / diff;
+	_result[2][3] = -1.0f;
+
+	_result[3][0] = 0.0f;
+	_result[3][1] = 0.0f;
+	_result[3][2] = (_nearClip * _farClip) / diff;
+	_result[3][3] = 0.0f;
+}
+
+void MatrixUtil::CreatePerspectiveFieldOfView(const f32 fieldOfView, const f32 aspectRatio, const f32 _nearClip, const f32 _farClip, CMatrix44& _result)
+{
+	assert(aspectRatio != 0.0f);
+	register f32 diff = _nearClip - _farClip;
+	assert(diff != 0.0f);
+	register f32 yScale = 1.0f / tanf(fieldOfView / 2.0f);
+	register f32 xScale = yScale / aspectRatio;
+
+	_result[0][0] = xScale;
+	_result[0][1] = 0.0f;
+	_result[0][2] = 0.0f;
+	_result[0][3] = 0.0f;
+
+	_result[1][0] = 0.0f;
+	_result[1][1] = yScale;
+	_result[1][2] = 0.0f;
+	_result[1][3] = 0.0f;
+
+	_result[2][0] = 0.0f;
+	_result[2][1] = 0.0f;
+	_result[2][2] = _farClip / diff;
+	_result[2][3] = -1.0f;
+
+	_result[3][0] = 0.0f;
+	_result[3][1] = 0.0f;
+	_result[3][2] = (_nearClip * _farClip) / diff;
+	_result[3][3] = 0.0f;
+
+}
+
+void MatrixUtil::CreateOrthographic(const f32 _width, const f32 _height, const f32 _nearClip, const f32 _farClip, CMatrix44 &_result)
+{
+	Assert(_width != 0.0f);
+	Assert(_height != 0.0f);
+	register f32 diffNF = _nearClip - _farClip;
+	Assert(diffNF != 0.0f);
+
+	_result[0][0] = 2.0f * _width;
+	_result[0][1] = 0.0f;
+	_result[0][2] = 0.0f;
+	_result[0][3] = 0.0f;
+
+	_result[1][0] = 0.0f;
+	_result[1][1] = 2.0f * _height;
+	_result[1][2] = 0.0f;
+	_result[1][3] = 0.0f;
+
+	_result[2][0] = 0.0f;
+	_result[2][1] = 0.0f;
+	_result[2][2] = 1.0f / diffNF;
+	_result[2][3] = 0.0f;
+
+	_result[3][0] = 0.0f;
+	_result[3][1] = 0.0f;
+	_result[3][2] = _nearClip / diffNF;
+	_result[3][3] = 1.0f;
 }
 
 void MatrixUtil::PrintMatrix(const CMatrix44& _mtx)

@@ -15,11 +15,11 @@ template<typename ... ARGS>
 static void PrintWarning(const c8* _fmt, ARGS const& ...);
 
 
-#ifdef _DEBUG
+#ifdef DEBUG_MODE
 
-#define PRINT(format, ...)			LIB_KATA_NAMESPACE::Print(format, __VA_ARGS__)
-#define PRINT_ERROR(format, ...)	LIB_KATA_NAMESPACE::PrintError(format, __VA_ARGS__)
-#define PRINT_WARNING(format, ...)	LIB_KATA_NAMESPACE::PrintWarning(format, __VA_ARGS__)
+#define PRINT(format, ...)			LIB_KATA::Print(format, __VA_ARGS__)
+#define PRINT_ERROR(format, ...)	LIB_KATA::PrintError(format, __VA_ARGS__)
+#define PRINT_WARNING(format, ...)	LIB_KATA::PrintWarning(format, __VA_ARGS__)
 
 #define Assert(x) assert(x)
 

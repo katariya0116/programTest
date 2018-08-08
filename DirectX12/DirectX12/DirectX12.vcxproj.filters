@@ -20,12 +20,12 @@
     <Filter Include="src\renderer\dx12">
       <UniqueIdentifier>{abf2c2cf-a4a7-41c7-8d74-4e3d415b0ee8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\window">
+      <UniqueIdentifier>{7370945a-0382-4fd7-ab9d-786b40cef253}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\window.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\renderer\renderer_utility.cpp">
@@ -34,11 +34,14 @@
     <ClCompile Include="src\renderer\dx12\renderer_dx12.cpp">
       <Filter>src\renderer\dx12</Filter>
     </ClCompile>
+    <ClCompile Include="src\window\window.cpp">
+      <Filter>src\window</Filter>
+    </ClCompile>
+    <ClCompile Include="src\application.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\window.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="src\shader\shader_dx12.h">
       <Filter>src\shader</Filter>
     </ClInclude>
@@ -50,6 +53,12 @@
     </ClInclude>
     <ClInclude Include="src\renderer\dx12\renderer_dx12.h">
       <Filter>src\renderer\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="src\window\window.h">
+      <Filter>src\window</Filter>
+    </ClInclude>
+    <ClInclude Include="src\application.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

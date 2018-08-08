@@ -4,9 +4,6 @@
 
 LIB_KATA_BEGIN
 
-// ”O‚Ì‚½‚ßdefine‚ğØ‚Á‚Ä‚¨‚­iC++11ŠÂ‹«‚¶‚á‚È‚¢‚Æ‚±‚ë‚ÅØ‚Á‚½‚æ‚¤j
-#define LIB_ALIGNED(x) alignas(x)
-
 struct CHandle
 {
 public:

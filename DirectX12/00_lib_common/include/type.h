@@ -3,11 +3,7 @@
 #ifndef __TYPE_H__
 #define __TYPE_H__
 
-// ライブラリネームスペース
-#define LIB_KATA_NAMESPACE kataLib
-#define LIB_KATA_NAMESPACE_NAME #LIB_KATA_NAMESPACE
-#define LIB_KATA_BEGIN namespace LIB_KATA_NAMESPACE {
-#define LIB_KATA_END };
+#include "lib_def.h"
 
 typedef bool				b8;
 typedef char				c8;

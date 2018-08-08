@@ -16,6 +16,13 @@ b8 CWindow::Initialize(const CWindow::INIT_PARAM& _initParam)
 	ShowConsoleWin();
 #endif
 
+	HINSTANCE hInst = GetModuleHandle(nullptr);
+	if (!hInst)
+	{
+		PRINT_ERROR("Error : GetModuleHandle() Failed.");
+		return false;
+	}
+
 	m_className = _initParam.className;
 
 	WNDCLASSEX	wc{};
@@ -24,7 +31,7 @@ b8 CWindow::Initialize(const CWindow::INIT_PARAM& _initParam)
 	wc.lpfnWndProc = WindowProc;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
-	wc.hInstance = _initParam.hInst;
+	wc.hInstance = hInst;
 	wc.lpszMenuName = NULL;
 	wc.lpszClassName = _initParam.className;
 	wc.hIcon = (HICON)LoadImage(NULL, IDI_APPLICATION, IMAGE_ICON, 0, 0, LR_SHARED);
@@ -48,7 +55,7 @@ b8 CWindow::Initialize(const CWindow::INIT_PARAM& _initParam)
 		_initParam.height,
 		NULL,
 		NULL,
-		_initParam.hInst,
+		hInst,
 		NULL);
 
 	{

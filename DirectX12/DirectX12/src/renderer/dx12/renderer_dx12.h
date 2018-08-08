@@ -1,6 +1,7 @@
 #pragma once
 
 #include "renderer/render.h"
+#include "math/matrix.h"
 
 #include <windows.h>
 
@@ -51,6 +52,18 @@ public:
 public:
 	DEVICE* GetDevice() override;
 
+public:
+	HRESULT CreateRootSignature();
+	HRESULT CreatePipeline();
+	HRESULT CreateVertexBuff();
+	HRESULT CreateConstantBuff();
+
+public:
+	void ReleaseVertexBuff();
+	void ReleaseConstantBuff();
+	void ReleasePipeline();
+	void ReleaseRootSignature();
+
 private:
 	HRESULT __CreateFactory();
 	HRESULT __CreateDevice();
@@ -59,9 +72,6 @@ private:
 	HRESULT __CreateRenderTargetView();
 	HRESULT __CreateDepthStencilBuffer();
 	HRESULT __CreateCommandList();
-	HRESULT __CreateRootSignature();
-
-	HRESULT __CreatePipelineStateObject();
 
 	HRESULT __WaitForPreviousFrame();
 	HRESULT __SetResourceBarrier(D3D12_RESOURCE_STATES BeforeState, D3D12_RESOURCE_STATES AfterState);
@@ -73,23 +83,30 @@ private:
 	WinShPtr<IDXGIAdapter3>		m_adapter;
 	WinShPtr<ID3D12Device>		m_device;
 	WinShPtr<ID3D12CommandQueue>	m_cmdQue;
-	HANDLE						m_fenceHdl;
+	HANDLE							m_fenceHdl;
 	WinShPtr<ID3D12Fence>			m_queueFence;
 	WinShPtr<IDXGISwapChain3>		m_swapChain;
 
 	WinShPtr<ID3D12GraphicsCommandList>	m_commandList;
-	WinShPtr<ID3D12CommandAllocator>		m_commandAllocator;
+	WinShPtr<ID3D12CommandAllocator>	m_commandAllocator;
 
-	WinShPtr<ID3D12Resource>				m_renderTrg[RTV_NUM];
+	WinShPtr<ID3D12Resource>			m_renderTrg[RTV_NUM];
 	WinShPtr<ID3D12DescriptorHeap>		m_descriptHeapRtv;
 	D3D12_CPU_DESCRIPTOR_HANDLE			m_descriptHdlRtv[RTV_NUM];
 
-	WinShPtr<ID3D12Resource>				m_depthBuffer;
+	WinShPtr<ID3D12Resource>			m_depthBuffer;
 	WinShPtr<ID3D12DescriptorHeap>		m_descriptHeapDepth;
 	D3D12_CPU_DESCRIPTOR_HANDLE			m_descriptHdlDepth;
 
 	WinShPtr<ID3D12PipelineState>		m_pipelineState;
 	WinShPtr<ID3D12RootSignature>		m_rootSignature;
+
+	// ポリゴン情報
+	WinShPtr<ID3D12Resource>             m_vertexBuffer;		// 頂点バッファ
+	WinShPtr<ID3D12Resource>             m_constantBuffer;		// 定数バッファ
+	WinShPtr<ID3D12DescriptorHeap>       m_cbvHeap;				// 定数バッファ書き込みクラス
+	D3D12_VERTEX_BUFFER_VIEW             m_vertexBufferView;	// 頂点バッファのポインタ一位置とサイズ
+	u8*                                  m_cbvDataBegin;		// CBVの書き込みメモリ開始位置
 
 	D3D12_RECT					m_scissorRect;
 	D3D12_VIEWPORT				m_viewPort;

@@ -128,17 +128,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\application.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\renderer\dx12\renderer_dx12.cpp" />
     <ClCompile Include="src\renderer\renderer_utility.cpp" />
-    <ClCompile Include="src\window.cpp" />
+    <ClCompile Include="src\window\window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\application.h" />
     <ClInclude Include="src\renderer\dx12\renderer_dx12.h" />
     <ClInclude Include="src\renderer\render.h" />
     <ClInclude Include="src\renderer\renderer_utility.h" />
     <ClInclude Include="src\shader\shader_dx12.h" />
-    <ClInclude Include="src\window.h" />
+    <ClInclude Include="src\window\window.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="res\shader\shader_def.hlsli">

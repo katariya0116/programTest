@@ -23,6 +23,9 @@
     <ClInclude Include="include\class.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="include\math_lib.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="include\assert_print.inl">
@@ -32,6 +35,9 @@
   <ItemGroup>
     <ClCompile Include="src\class.cpp">
       <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="include\lib_def.h">
+      <Filter>include</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

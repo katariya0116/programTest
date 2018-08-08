@@ -68,6 +68,16 @@ public:
 	// 逆行列
 	static CMatrix44& Inverse(CMatrix44& _ret, const CMatrix44& _m0);
 
+	// View行列の作成
+	static void CreateLookAt(const CVector3& _cameraPosition, const CVector3& _cameraTarget, const CVector3& _cameraUpVector, CMatrix44& _result);
+
+	// 透視投影行列の作成
+	static void CreatePerspective(const f32 _width, const f32 _height, const f32 _nearClip, const f32 _farClip, CMatrix44& _result);
+	static void CreatePerspectiveFieldOfView(const f32 fieldOfView, const f32 aspectRatio, const f32 _nearClip, const f32 _farClip, CMatrix44& _result);
+
+	// 平行投影行列の作成
+	static void CreateOrthographic(const f32 _width, const f32 _height, const f32 _nearClip, const f32 _farClip, CMatrix44 &_result);
+
 	// プリント
 	static void PrintMatrix(const CMatrix44& _mtx);
 };

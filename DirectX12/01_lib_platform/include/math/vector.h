@@ -8,7 +8,7 @@ public:
 	CVector2();
 	CVector2(f32 _x, f32 _y);
 	CVector2(const f32* _pos);
-	virtual ~CVector2();
+	~CVector2();
 
 public:
 	void Set(f32 _x, f32 _y) { x = _x; y = _y; }
@@ -66,7 +66,7 @@ public:
 	CVector3();
 	CVector3(f32 _x, f32 _y, f32 _z);
 	CVector3(const f32* _pos);
-	virtual ~CVector3();
+	~CVector3();
 
 public:
 	void Set(f32 _x, f32 _y, f32 _z) { x = _x; y = _y; z = _z; }
@@ -130,7 +130,7 @@ public:
 	CVector4();
 	CVector4(f32 _x, f32 _y, f32 _z, f32 _w);
 	CVector4(const f32* _pos);
-	virtual ~CVector4();
+	~CVector4();
 
 public:
 	void Set(f32 _x, f32 _y, f32 _z, f32 _w) { x = _x; y = _y; z = _z; w = _w; }

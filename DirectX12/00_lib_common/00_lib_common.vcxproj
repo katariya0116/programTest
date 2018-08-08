@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="include\assert_print.h" />
     <ClInclude Include="include\class.h" />
+    <ClInclude Include="include\math_lib.h" />
     <ClInclude Include="include\lib_common.h" />
     <ClInclude Include="include\type.h" />
   </ItemGroup>
@@ -28,6 +29,7 @@
     <None Include="include\assert_print.inl" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="include\lib_def.h" />
     <ClCompile Include="src\class.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

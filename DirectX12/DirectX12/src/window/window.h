@@ -9,7 +9,6 @@ public:
 	{
 		const c8* windowName = NULL;
 		const c8* className = NULL;
-		HINSTANCE hInst = 0;
 		s32 width = 0;
 		s32 height = 0;
 		s32 posX = -1;

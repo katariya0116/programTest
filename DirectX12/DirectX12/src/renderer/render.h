@@ -7,7 +7,7 @@
 class IRenderer
 {
 public:
-	using Color = LIB_KATA_NAMESPACE::Color;
+	using Color = LIB_KATA::Color;
 
 public:
 	virtual void Finalize() = 0;

@@ -2,6 +2,7 @@
 
 #include "renderer/render.h"
 #include "math/matrix.h"
+#include "vertex_buff/vertex_buff.h"
 
 #include <windows.h>
 
@@ -45,9 +46,12 @@ public:
 
 public:
 	
-	void BeginDraw(const IRenderer::Color& _color) override;
+	void BeginDraw() override;
 
 	void EndDraw() override;
+
+public:
+	void DrawPolygon(const RENDER_DRAW_POLYGON_PARAM& _param) override;
 
 public:
 	DEVICE* GetDevice() override;
@@ -55,11 +59,9 @@ public:
 public:
 	HRESULT CreateRootSignature();
 	HRESULT CreatePipeline();
-	HRESULT CreateVertexBuff();
 	HRESULT CreateConstantBuff();
 
 public:
-	void ReleaseVertexBuff();
 	void ReleaseConstantBuff();
 	void ReleasePipeline();
 	void ReleaseRootSignature();
@@ -98,14 +100,11 @@ private:
 	WinShPtr<ID3D12DescriptorHeap>		m_descriptHeapDepth;
 	D3D12_CPU_DESCRIPTOR_HANDLE			m_descriptHdlDepth;
 
+	// パイプライン情報
 	WinShPtr<ID3D12PipelineState>		m_pipelineState;
 	WinShPtr<ID3D12RootSignature>		m_rootSignature;
-
-	// ポリゴン情報
-	WinShPtr<ID3D12Resource>             m_vertexBuffer;		// 頂点バッファ
 	WinShPtr<ID3D12Resource>             m_constantBuffer;		// 定数バッファ
 	WinShPtr<ID3D12DescriptorHeap>       m_cbvHeap;				// 定数バッファ書き込みクラス
-	D3D12_VERTEX_BUFFER_VIEW             m_vertexBufferView;	// 頂点バッファのポインタ一位置とサイズ
 	u8*                                  m_cbvDataBegin;		// CBVの書き込みメモリ開始位置
 
 	D3D12_RECT					m_scissorRect;

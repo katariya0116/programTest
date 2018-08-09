@@ -1,6 +1,6 @@
 #pragma once
 
-class CShader
+class CShaderDx12
 {
 public:
 	struct INIT_PARAM
@@ -10,8 +10,8 @@ public:
 
 	};
 public:
-	CShader();
-	virtual ~CShader();
+	CShaderDx12();
+	virtual ~CShaderDx12();
 
 public:
 	b8 Initialize(const INIT_PARAM& _param);

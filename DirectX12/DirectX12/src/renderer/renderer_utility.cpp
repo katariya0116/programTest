@@ -48,7 +48,7 @@ void CRenderUtility::Finalize()
 void CRenderUtility::Begin()
 {
 	Assert(s_inst);
-	s_inst->BeginDraw(IRenderer::Color(0.0f, 1.0f, 0.0f, 1.0f));
+	s_inst->BeginDraw();
 }
 
 void CRenderUtility::End()
@@ -57,6 +57,11 @@ void CRenderUtility::End()
 	s_inst->EndDraw();
 }
 
+void CRenderUtility::DrawPolygon(const RENDER_DRAW_POLYGON_PARAM& _param)
+{
+	Assert(s_inst);
+	s_inst->DrawPolygon(_param);
+}
 
 IRenderer* CRenderUtility::GetRenderer()
 {

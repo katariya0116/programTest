@@ -1,6 +1,10 @@
 #pragma once
 
 class IRenderer;
+class CVertexBuff;
+class CIndexBuff;
+struct RENDER_DRAW_POLYGON_PARAM;
+
 
 enum class RENDERER_TYPE
 {
@@ -32,6 +36,9 @@ public:
 	static void Begin();
 
 	static void End();
+
+public:
+	static void DrawPolygon(const RENDER_DRAW_POLYGON_PARAM& _param);
 
 public:
 	static IRenderer* GetRenderer();

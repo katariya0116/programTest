@@ -11,8 +11,20 @@ namespace
 	constexpr s32 WINDOW_HEIGHT = 480;
 	constexpr c8 WND_CLASS_NAME[] = "DirectX12";
 
-	static 	CWindow s_window;
+	static 	CWindow			s_window;
+	static	CVertexBuff		s_vertexBuff;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Vertex structure
+///////////////////////////////////////////////////////////////////////////////////////////////////
+struct Vertex
+{
+	f32 Position[3];     //!< 位置座標です.
+	f32 Normal[3];       //!< 法線ベクトルです.
+	f32 TexCoord[2];     //!< テクスチャ座標です.
+	f32 Color[4];        //!< 頂点カラーです.
+};
 
 using namespace LIB_KATA;
 
@@ -84,10 +96,14 @@ void CApplication::Loop()
 
 		// 描画開始
 		CRenderUtility::Begin();
-
+		{
+			RENDER_DRAW_POLYGON_PARAM param;
+			param.drawType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+			param.vtxBuff = &s_vertexBuff;
+			CRenderUtility::DrawPolygon(param);
+		}
 		// 描画終了
 		CRenderUtility::End();
-
 	}
 }
 
@@ -106,8 +122,20 @@ b8 CApplication::InitializeApp()
 	CRendererDx12* render = SCast<CRendererDx12*>(CRenderUtility::GetRenderer());
 	render->CreateRootSignature();
 	render->CreatePipeline();
-	render->CreateVertexBuff();
 	render->CreateConstantBuff();
+
+	// 頂点データ.
+	Vertex vertices[] = {
+		{ { 0.0f,  1.0f, 0.0f },{ 0.0f, 0.0f, -1.0f },{ 0.0f, 1.0f },{ 1.0f, 0.0f, 0.0f, 1.0f } },
+		{ { 1.0f, -1.0f, 0.0f },{ 0.0f, 0.0f, -1.0f },{ 1.0f, 0.0f },{ 0.0f, 1.0f, 0.0f, 1.0f } },
+		{ { -1.0f, -1.0f, 0.0f },{ 0.0f, 0.0f, -1.0f },{ 0.0f, 0.0f },{ 0.0f, 0.0f, 1.0f, 1.0f } }
+	};
+	CVertexBuff::CREATE_VTX_BUFF_PARAM param;
+	param._buff = vertices;
+	param.stride = sizeof(Vertex);
+	param.size = sizeof(vertices);
+	param.vertexNum = param.size / param.stride;
+	s_vertexBuff.Create(param);
 
 	return true;
 }
@@ -116,7 +144,8 @@ void CApplication::FinalizeApp()
 {
 	CRendererDx12* render = SCast<CRendererDx12*>(CRenderUtility::GetRenderer());
 	render->ReleaseConstantBuff();
-	render->ReleaseVertexBuff();
 	render->ReleasePipeline();
 	render->ReleaseRootSignature();
+
+	s_vertexBuff.Release();
 }

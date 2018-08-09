@@ -1,17 +1,7 @@
 #include "renderer_dx12.h"
+#include "vertex_buff\vertex_buff.h"
 #include "math/vector.h"
 #include <dxgidebug.h>
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Vertex structure
-///////////////////////////////////////////////////////////////////////////////////////////////////
-struct Vertex
-{
-	f32 Position[3];     //!< 位置座標です.
-	f32 Normal[3];       //!< 法線ベクトルです.
-	f32 TexCoord[2];     //!< テクスチャ座標です.
-	f32 Color[4];        //!< 頂点カラーです.
-};
 
 // 定数バッファは 256 byte アライメント必須.
 struct LIB_ALIGNED(256) ResConstantBuffer
@@ -162,7 +152,7 @@ void CRendererDx12::Finalize()
 }
 
 // 描画開始
-void CRendererDx12::BeginDraw(const IRenderer::Color& _color)
+void CRendererDx12::BeginDraw()
 {
 #if 1
 	// 回転角を増やす.
@@ -199,18 +189,9 @@ void CRendererDx12::BeginDraw(const IRenderer::Color& _color)
 	HRESULT hr = m_commandAllocator->Reset();
 	if (FAILED(hr)){ return; }
 
-	hr = m_commandList->Reset(m_commandAllocator.Get(), m_pipelineState.Get());
+	// コマンドリストをリセット（この時にAllocatorとパイプラインを設定）
+	hr = m_commandList->Reset(m_commandAllocator.Get(), nullptr);
 	if (FAILED(hr)) { return; }
-
-	// ディスクリプタヒープを設定
-	// (定数書き込み用)
-	m_commandList->SetDescriptorHeaps(1, m_cbvHeap.GetAddressOf());
-
-	//ルートシグネチャの設定
-	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
-
-	// ディスクリプタヒープテーブルを設定
-	m_commandList->SetGraphicsRootDescriptorTable(0, m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
 
 	//ビューポートとシザー矩形の設定
 	m_commandList->RSSetViewports(1, &m_viewPort);
@@ -223,17 +204,33 @@ void CRendererDx12::BeginDraw(const IRenderer::Color& _color)
 	m_commandList->OMSetRenderTargets(1, &m_descriptHdlRtv[m_rtvIndex], FALSE, &m_descriptHdlDepth);
 
 	//深度バッファとレンダーターゲットのクリア
-	m_commandList->ClearRenderTargetView(m_descriptHdlRtv[m_rtvIndex], _color.color, 0, nullptr);
+	LIB_KATA::Color clearColor(0.0f, 0.5f, 0.0f, 1.0f);
+	m_commandList->ClearRenderTargetView(m_descriptHdlRtv[m_rtvIndex], clearColor.color, 0, nullptr);
 	m_commandList->ClearDepthStencilView(m_descriptHdlDepth, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
+	// これでパイプラインを設定することも可能だよ
+	m_commandList->SetPipelineState(m_pipelineState.Get());
+
+	//ルートシグネチャの設定
+	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+
+	// ディスクリプタヒープを設定
+	m_commandList->SetDescriptorHeaps(1, m_cbvHeap.GetAddressOf());
+
+	// ディスクリプタヒープテーブルを設定
+	m_commandList->SetGraphicsRootDescriptorTable(0, m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
+}
+
+void CRendererDx12::DrawPolygon(const RENDER_DRAW_POLYGON_PARAM& _param)
+{
 	// プリミティブトポロジーの設定.
-	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_commandList->IASetPrimitiveTopology( SCast<D3D_PRIMITIVE_TOPOLOGY>(_param.drawType));
 
 	// 頂点バッファビューを設定.
-	m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
+	m_commandList->IASetVertexBuffers(0, 1, _param.vtxBuff->GetVertexView());
 
 	// 描画コマンドを生成.
-	m_commandList->DrawInstanced(3, 1, 0, 0);
+	m_commandList->DrawInstanced(_param.vtxBuff->GetVertexNum(), 1, 0, 0);
 }
 
 void CRendererDx12::EndDraw()
@@ -491,20 +488,21 @@ HRESULT CRendererDx12::CreateRootSignature()
 {
 	HRESULT hr{};
 
-	// ディスクリプタレンジの設定.
+	// ディスクリプタレンジの設定（定数バッファ書き込み用のレンジだよ）
 	D3D12_DESCRIPTOR_RANGE range;
-	range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-	range.NumDescriptors = 1;
-	range.BaseShaderRegister = 0;
-	range.RegisterSpace = 0;
-	range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+	range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;	// このDescriptorRangeは定数バッファ
+	range.NumDescriptors = 1;							// Descriptorは一つ
+	range.BaseShaderRegister = 0;						// シェーダ側の開始インデックスは0番
+	range.RegisterSpace = 0;							// TODO: SM5.1からのspaceだけど、どういうものかよくわからない
+	range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // TODO: とりあえず-1を入れておけばOK？
 
 	// ルートパラメータの設定.
 	D3D12_ROOT_PARAMETER		root_parameters;
-	root_parameters.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	root_parameters.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-	root_parameters.DescriptorTable.NumDescriptorRanges = 1;
-	root_parameters.DescriptorTable.pDescriptorRanges = &range;
+	root_parameters.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // これはDescriptorTableである
+	root_parameters.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;			// パラメータは頂点シェーダーのみから確認可能
+	root_parameters.DescriptorTable.NumDescriptorRanges = 1;					// DescriptorRangeの数
+	root_parameters.DescriptorTable.pDescriptorRanges = &range;					// DescriptorRangeの先頭アドレス
+	//root_parameters.Constants.Num32BitValues = 4;								// D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS（32ビットの定数）を何個割り当てたいか
 
 	// ルートシグネチャーの定義設定
 	D3D12_ROOT_SIGNATURE_DESC	root_signature_desc{};
@@ -512,12 +510,7 @@ HRESULT CRendererDx12::CreateRootSignature()
 	root_signature_desc.pParameters = &root_parameters;
 	root_signature_desc.NumStaticSamplers = 0;
 	root_signature_desc.pStaticSamplers = nullptr;
-	root_signature_desc.Flags = 
-		  D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
-		| D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
-		| D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS
-		| D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS
-		| D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+	root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
 	WinShPtr<ID3DBlob> pSignature{};
 	WinShPtr<ID3DBlob> pError{};
@@ -635,75 +628,6 @@ HRESULT CRendererDx12::CreatePipeline()
 	return hr;
 }
 
-// 頂点バッファの生成
-HRESULT CRendererDx12::CreateVertexBuff()
-{
-	// 頂点データ.
-	Vertex vertices[] = {
-		{ { 0.0f,  1.0f, 0.0f },{ 0.0f, 0.0f, -1.0f },{ 0.0f, 1.0f },{ 1.0f, 0.0f, 0.0f, 1.0f } },
-		{ { 1.0f, -1.0f, 0.0f },{ 0.0f, 0.0f, -1.0f },{ 1.0f, 0.0f },{ 0.0f, 1.0f, 0.0f, 1.0f } },
-		{ { -1.0f, -1.0f, 0.0f },{ 0.0f, 0.0f, -1.0f },{ 0.0f, 0.0f },{ 0.0f, 0.0f, 1.0f, 1.0f } }
-	};
-
-	// ヒーププロパティの設定.
-	D3D12_HEAP_PROPERTIES prop;
-	prop.Type = D3D12_HEAP_TYPE_UPLOAD;
-	prop.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	prop.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	prop.CreationNodeMask = 1;
-	prop.VisibleNodeMask = 1;
-
-	// リソースの設定.
-	D3D12_RESOURCE_DESC desc;
-	desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	desc.Alignment = 0;
-	desc.Width = sizeof(vertices);
-	desc.Height = 1;
-	desc.DepthOrArraySize = 1;
-	desc.MipLevels = 1;
-	desc.Format = DXGI_FORMAT_UNKNOWN;
-	desc.SampleDesc.Count = 1;
-	desc.SampleDesc.Quality = 0;
-	desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	desc.Flags = D3D12_RESOURCE_FLAG_NONE;
-
-	// リソースを生成.
-	HRESULT hr = m_device->CreateCommittedResource(
-		&prop,
-		D3D12_HEAP_FLAG_NONE,
-		&desc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(m_vertexBuffer.GetAddressOf()));
-	if (FAILED(hr))
-	{
-		PRINT_ERROR("Error : ID3D12Device::CreateCommittedResource() Failed.");
-		return hr;
-	}
-
-	// GPU側にマップする.
-	u8* pData;
-	hr = m_vertexBuffer->Map(0, nullptr, RCast<void**>(&pData));
-	if (FAILED(hr))
-	{
-		PRINT_ERROR("Error : ID3D12Resource::Map() Failed.");
-		return false;
-	}
-
-	// 頂点データをコピー.
-	memcpy(pData, vertices, sizeof(vertices));
-
-	// アンマップする.
-	m_vertexBuffer->Unmap(0, nullptr);
-
-	// 頂点バッファビューの設定.
-	m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
-	m_vertexBufferView.StrideInBytes = sizeof(Vertex);
-	m_vertexBufferView.SizeInBytes = sizeof(vertices);
-
-	return hr;
-}
-
 // 定数バッファの生成
 HRESULT CRendererDx12::CreateConstantBuff()
 {
@@ -761,7 +685,7 @@ HRESULT CRendererDx12::CreateConstantBuff()
 	bufferDesc.BufferLocation = m_constantBuffer->GetGPUVirtualAddress();
 	bufferDesc.SizeInBytes = sizeof(ResConstantBuffer);
 
-	// 定数バッファビューを生成.
+	// 定数バッファのDesciptorをHeapに設定
 	m_device->CreateConstantBufferView(&bufferDesc, m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
 
 	// マップする. アプリケーション終了まで Unmap しない.
@@ -794,16 +718,6 @@ HRESULT CRendererDx12::CreateConstantBuff()
 
 	return hr;
 }
-
-void CRendererDx12::ReleaseVertexBuff()
-{
-	m_vertexBuffer.Reset();
-	// ロケーションを初期化
-	m_vertexBufferView.BufferLocation = 0;
-	m_vertexBufferView.SizeInBytes = 0;
-	m_vertexBufferView.StrideInBytes = 0;
-}
-
 void CRendererDx12::ReleaseConstantBuff()
 {
 	m_constantBuffer->Unmap(0, nullptr);

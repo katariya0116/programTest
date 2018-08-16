@@ -1,8 +1,6 @@
 #pragma once
 
 #include "renderer/render.h"
-#include "math/matrix.h"
-#include "vertex_buff/vertex_buff.h"
 
 #include <windows.h>
 
@@ -45,26 +43,21 @@ public:
 	void Finalize() override;
 
 public:
-	
+	// 描画開始
 	void BeginDraw() override;
 
+	// 描画修了
 	void EndDraw() override;
 
 public:
+	// パイプラインの設定
+	void SetPipline(const CPipeline* _pipline) override;
+
+	// ポリゴン描画（もうちょい小分けにした方が便利がいいかも……）
 	void DrawPolygon(const RENDER_DRAW_POLYGON_PARAM& _param) override;
 
 public:
 	DEVICE* GetDevice() override;
-
-public:
-	HRESULT CreateRootSignature();
-	HRESULT CreatePipeline();
-	HRESULT CreateConstantBuff();
-
-public:
-	void ReleaseConstantBuff();
-	void ReleasePipeline();
-	void ReleaseRootSignature();
 
 private:
 	HRESULT __CreateFactory();
@@ -99,13 +92,6 @@ private:
 	WinShPtr<ID3D12Resource>			m_depthBuffer;
 	WinShPtr<ID3D12DescriptorHeap>		m_descriptHeapDepth;
 	D3D12_CPU_DESCRIPTOR_HANDLE			m_descriptHdlDepth;
-
-	// パイプライン情報
-	WinShPtr<ID3D12PipelineState>		m_pipelineState;
-	WinShPtr<ID3D12RootSignature>		m_rootSignature;
-	WinShPtr<ID3D12Resource>             m_constantBuffer;		// 定数バッファ
-	WinShPtr<ID3D12DescriptorHeap>       m_cbvHeap;				// 定数バッファ書き込みクラス
-	u8*                                  m_cbvDataBegin;		// CBVの書き込みメモリ開始位置
 
 	D3D12_RECT					m_scissorRect;
 	D3D12_VIEWPORT				m_viewPort;

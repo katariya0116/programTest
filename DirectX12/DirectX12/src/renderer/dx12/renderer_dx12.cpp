@@ -1,16 +1,10 @@
 #include "renderer_dx12.h"
 #include "vertex_buff\vertex_buff.h"
+#include "shader/shader.h"
 #include "math/vector.h"
+#include "pipeline\pipeline.h"
 #include <dxgidebug.h>
 
-// 定数バッファは 256 byte アライメント必須.
-struct LIB_ALIGNED(256) ResConstantBuffer
-{
-	LIB_KATA::CMatrix44   World;
-	LIB_KATA::CMatrix44   View;
-	LIB_KATA::CMatrix44   Proj;
-};
-static ResConstantBuffer s_constantBufferData;	//コンスタントバッファ
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -33,9 +27,6 @@ CRendererDx12::CRendererDx12()
 	m_depthBuffer = nullptr;
 	m_descriptHeapDepth = nullptr;
 	m_descriptHdlDepth = D3D12_CPU_DESCRIPTOR_HANDLE();
-
-	m_pipelineState = nullptr;
-	m_rootSignature = nullptr;
 
 	m_frames = 0;
 	m_rtvIndex = 0;
@@ -154,37 +145,6 @@ void CRendererDx12::Finalize()
 // 描画開始
 void CRendererDx12::BeginDraw()
 {
-#if 1
-	// 回転角を増やす.
-	static f32 rot = 0.0f;
-	rot = (0.01f / 0.5f);
-	
-	// ワールド行列を更新.
-	LIB_KATA::CMatrix44 mtx;
-	LIB_KATA::MatrixUtil::Identity(mtx);
-	LIB_KATA::MatrixUtil::RotY(mtx, rot);
-
-	LIB_KATA::CMatrix44 temp = mtx;
-	//LIB_KATA::MatrixUtil::Transpose(temp, mtx);
-
-	LIB_KATA::CMatrix44 retMtx;
-	LIB_KATA::MatrixUtil::Identity(retMtx);
-	LIB_KATA::MatrixUtil::Mul(retMtx, s_constantBufferData.World, temp);
-	//LIB_KATA::MatrixUtil::Mul(retMtx, retMtx, s_constantBufferData.View);
-	//LIB_KATA::MatrixUtil::Mul(retMtx, retMtx, s_constantBufferData.Proj);
-	
-	LIB_KATA::CVector4 ret[3];
-
-	LIB_KATA::MatrixUtil::Transform(ret[0], retMtx, LIB_KATA::CVector4::Left + LIB_KATA::CVector4(0.0f,0.0f, 0.0f, 1.0f));
-	LIB_KATA::MatrixUtil::Transform(ret[1], retMtx, LIB_KATA::CVector4::Right + LIB_KATA::CVector4(0.0f, 0.0f, 0.0f, 1.0f));
-	LIB_KATA::MatrixUtil::Transform(ret[2], retMtx, LIB_KATA::CVector4::Up + LIB_KATA::CVector4(0.0f, 0.0f, 0.0f, 1.0f));
-
-	s_constantBufferData.World = retMtx;
-#endif
-
-	// 定数バッファを更新.
-	memcpy(m_cbvDataBegin, &s_constantBufferData, sizeof(s_constantBufferData));
-
 	// コマンドアロケータとコマンドリストをリセット.
 	HRESULT hr = m_commandAllocator->Reset();
 	if (FAILED(hr)){ return; }
@@ -207,18 +167,25 @@ void CRendererDx12::BeginDraw()
 	LIB_KATA::Color clearColor(0.0f, 0.5f, 0.0f, 1.0f);
 	m_commandList->ClearRenderTargetView(m_descriptHdlRtv[m_rtvIndex], clearColor.color, 0, nullptr);
 	m_commandList->ClearDepthStencilView(m_descriptHdlDepth, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+}
 
+// 
+void CRendererDx12::SetPipline(const CPipeline* _pipline)
+{
 	// これでパイプラインを設定することも可能だよ
-	m_commandList->SetPipelineState(m_pipelineState.Get());
+	m_commandList->SetPipelineState(_pipline->GetPipelineState());
 
 	//ルートシグネチャの設定
-	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+	m_commandList->SetGraphicsRootSignature(_pipline->GetRootSignature());
 
-	// ディスクリプタヒープを設定
-	m_commandList->SetDescriptorHeaps(1, m_cbvHeap.GetAddressOf());
-
-	// ディスクリプタヒープテーブルを設定
-	m_commandList->SetGraphicsRootDescriptorTable(0, m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
+	// 定数バッファのディスクリプタヒープを設定
+	ID3D12DescriptorHeap** heap = _pipline->GetConstBuffDHList();
+	u32 num = _pipline->GetConstBuffNum();
+	m_commandList->SetDescriptorHeaps(num, heap);
+	for (u32 idx = 0; idx < num; ++idx)
+	{
+		m_commandList->SetGraphicsRootDescriptorTable(idx, heap[idx]->GetGPUDescriptorHandleForHeapStart());
+	}
 }
 
 void CRendererDx12::DrawPolygon(const RENDER_DRAW_POLYGON_PARAM& _param)
@@ -482,260 +449,6 @@ HRESULT CRendererDx12::__CreateCommandList()
 	m_commandList->Close();
 
 	return hr;
-}
-
-HRESULT CRendererDx12::CreateRootSignature() 
-{
-	HRESULT hr{};
-
-	// ディスクリプタレンジの設定（定数バッファ書き込み用のレンジだよ）
-	D3D12_DESCRIPTOR_RANGE range;
-	range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;	// このDescriptorRangeは定数バッファ
-	range.NumDescriptors = 1;							// Descriptorは一つ
-	range.BaseShaderRegister = 0;						// シェーダ側の開始インデックスは0番
-	range.RegisterSpace = 0;							// TODO: SM5.1からのspaceだけど、どういうものかよくわからない
-	range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // TODO: とりあえず-1を入れておけばOK？
-
-	// ルートパラメータの設定.
-	D3D12_ROOT_PARAMETER		root_parameters;
-	root_parameters.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // これはDescriptorTableである
-	root_parameters.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;			// パラメータは頂点シェーダーのみから確認可能
-	root_parameters.DescriptorTable.NumDescriptorRanges = 1;					// DescriptorRangeの数
-	root_parameters.DescriptorTable.pDescriptorRanges = &range;					// DescriptorRangeの先頭アドレス
-	//root_parameters.Constants.Num32BitValues = 4;								// D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS（32ビットの定数）を何個割り当てたいか
-
-	// ルートシグネチャーの定義設定
-	D3D12_ROOT_SIGNATURE_DESC	root_signature_desc{};
-	root_signature_desc.NumParameters = 1;
-	root_signature_desc.pParameters = &root_parameters;
-	root_signature_desc.NumStaticSamplers = 0;
-	root_signature_desc.pStaticSamplers = nullptr;
-	root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-	WinShPtr<ID3DBlob> pSignature{};
-	WinShPtr<ID3DBlob> pError{};
-
-	// 定義からルートシグネチャーのシリアライズ
-	hr = D3D12SerializeRootSignature(&root_signature_desc, 
-		D3D_ROOT_SIGNATURE_VERSION_1, 
-		pSignature.GetAddressOf(), 
-		pError.GetAddressOf());
-	if (FAILED(hr)) 
-	{
-		PRINT_ERROR("D3D12SerializeRootSignature Error");
-		return hr;
-	}
-
-	// ルートシグネチャーの生成
-	hr = m_device->CreateRootSignature(0, pSignature->GetBufferPointer(), pSignature->GetBufferSize(), IID_PPV_ARGS(m_rootSignature.GetAddressOf()));
-	if (FAILED(hr))
-	{
-		PRINT_ERROR("CreateRootSignature Error");
-		return hr;
-	}
-
-	return hr;
-}
-
-HRESULT CRendererDx12::CreatePipeline()
-{
-	WinShPtr<ID3DBlob> pVSBlob;
-	WinShPtr<ID3DBlob> pPSBlob;
-
-	// 頂点シェーダのファイルパスを検索.
-	// コンパイル済み頂点シェーダを読み込む.
-	HRESULT hr = D3DReadFileToBlob(L"D:\\program\\programTest\\DirectX12\\DirectX12\\bin\\Debug\\x64\\shader_vs.cso", pVSBlob.GetAddressOf());
-	if (FAILED(hr))
-	{
-		PRINT_ERROR("Error : D3DReadFileToBlob() Failed.");
-		return hr;
-	}
-
-	// ピクセルシェーダのファイルパスを検索.
-	// コンパイル済みピクセルシェーダを読み込む.
-	hr = D3DReadFileToBlob(L"D:\\program\\programTest\\DirectX12\\DirectX12\\bin\\Debug\\x64\\shader_ps.cso", pPSBlob.GetAddressOf());
-	if (FAILED(hr))
-	{
-		PRINT_ERROR("Error : D3DReadFileToBlob() Failed.");
-		return hr;
-	}
-
-	// 入力レイアウトの設定.
-	D3D12_INPUT_ELEMENT_DESC inputElements[] = {
-		{ "POSITION",  0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL",    0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD",  0, DXGI_FORMAT_R32G32_FLOAT,       0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "VTX_COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-	};
-
-	// ラスタライザーステートの設定.
-	D3D12_RASTERIZER_DESC descRS;
-	descRS.FillMode = D3D12_FILL_MODE_SOLID;
-	descRS.CullMode = D3D12_CULL_MODE_NONE;
-	descRS.FrontCounterClockwise = FALSE;
-	descRS.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
-	descRS.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
-	descRS.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-	descRS.DepthClipEnable = TRUE;
-	descRS.MultisampleEnable = FALSE;
-	descRS.AntialiasedLineEnable = FALSE;
-	descRS.ForcedSampleCount = 0;
-	descRS.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
-
-	// レンダーターゲットのブレンド設定.
-	D3D12_RENDER_TARGET_BLEND_DESC descRTBS = 
-	{
-		FALSE, FALSE,
-		D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
-		D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
-		D3D12_LOGIC_OP_NOOP,
-		D3D12_COLOR_WRITE_ENABLE_ALL
-	};
-
-	// ブレンドステートの設定.
-	D3D12_BLEND_DESC descBS;
-	descBS.AlphaToCoverageEnable = FALSE;
-	descBS.IndependentBlendEnable = FALSE;
-	for (UINT i = 0; i<D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
-	{
-		descBS.RenderTarget[i] = descRTBS;
-	}
-
-	// パイプラインステートの設定.
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
-	desc.InputLayout = { inputElements, _countof(inputElements) };
-	desc.pRootSignature = m_rootSignature.Get();
-	desc.VS = { RCast<UINT8*>(pVSBlob->GetBufferPointer()), pVSBlob->GetBufferSize() };
-	desc.PS = { RCast<UINT8*>(pPSBlob->GetBufferPointer()), pPSBlob->GetBufferSize() };
-	desc.RasterizerState = descRS;
-	desc.BlendState = descBS;
-	desc.DepthStencilState.DepthEnable = FALSE;
-	desc.DepthStencilState.StencilEnable = FALSE;
-	desc.SampleMask = UINT_MAX;
-	desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	desc.NumRenderTargets = 1;
-	desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-	desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-	desc.SampleDesc.Count = 1;
-
-	// パイプラインステートを生成.
-	hr = m_device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(m_pipelineState.GetAddressOf()));
-	if (FAILED(hr))
-	{
-		PRINT_ERROR("Error : ID3D12Device::CreateGraphicsPipelineState() Failed.");
-		return hr;
-	}
-	return hr;
-}
-
-// 定数バッファの生成
-HRESULT CRendererDx12::CreateConstantBuff()
-{
-	// 定数バッファへの書き込みクラスの生成
-	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-	heapDesc.NumDescriptors = 1;
-	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-
-	HRESULT hr = m_device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(m_cbvHeap.GetAddressOf()));
-	if (FAILED(hr))
-	{
-		PRINT_ERROR("Error : ID3D12Device::CreateDescriptorHeap() Failed.");
-		return false;
-	}
-
-	// ヒーププロパティの設定.
-	D3D12_HEAP_PROPERTIES prop = {};
-	prop.Type = D3D12_HEAP_TYPE_UPLOAD;
-	prop.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	prop.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	prop.CreationNodeMask = 1;
-	prop.VisibleNodeMask = 1;
-
-	// リソースの設定.
-	D3D12_RESOURCE_DESC desc = {};
-	desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	desc.Alignment = 0;
-	desc.Width = sizeof(ResConstantBuffer);
-	desc.Height = 1;
-	desc.DepthOrArraySize = 1;
-	desc.MipLevels = 1;
-	desc.Format = DXGI_FORMAT_UNKNOWN;
-	desc.SampleDesc.Count = 1;
-	desc.SampleDesc.Quality = 0;
-	desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	desc.Flags = D3D12_RESOURCE_FLAG_NONE;
-
-	// リソースを生成.
-	hr = m_device->CreateCommittedResource(
-		&prop,
-		D3D12_HEAP_FLAG_NONE,
-		&desc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(m_constantBuffer.GetAddressOf()));
-	if (FAILED(hr))
-	{
-		PRINT_ERROR("Error : ID3D12Device::CreateCommittedResource() Failed.");
-		return false;
-	}
-
-	// 定数バッファビューの設定.
-	D3D12_CONSTANT_BUFFER_VIEW_DESC bufferDesc = {};
-	bufferDesc.BufferLocation = m_constantBuffer->GetGPUVirtualAddress();
-	bufferDesc.SizeInBytes = sizeof(ResConstantBuffer);
-
-	// 定数バッファのDesciptorをHeapに設定
-	m_device->CreateConstantBufferView(&bufferDesc, m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
-
-	// マップする. アプリケーション終了まで Unmap しない.
-	// "Keeping things mapped for the lifetime of the resource is okay." とのこと。
-	hr = m_constantBuffer->Map(0, nullptr, RCast<void**>(&m_cbvDataBegin));
-	if (FAILED(hr))
-	{
-		PRINT_ERROR("Error : ID3D12Resource::Map() Failed.");
-		return false;
-	}
-
-	// アスペクト比算出.
-	f32 aspectRatio = SCast<f32>(m_windowWidth) / SCast<f32>(m_windowHeight);
-
-#if 1
-	// 定数バッファデータの設定.
-	LIB_KATA::MatrixUtil::Identity(s_constantBufferData.World);
-
-	LIB_KATA::CMatrix44 view;
-	LIB_KATA::MatrixUtil::CreateLookAt(LIB_KATA::CVector3(0.0f, 0.0f, 5.0f), LIB_KATA::CVector3(0.0f, 0.0f, 0.0f), LIB_KATA::CVector3(0.0f, 1.0f, 0.0f), view);
-	s_constantBufferData.View = view;
-
-	LIB_KATA::CMatrix44 proj;
-	LIB_KATA::MatrixUtil::CreatePerspectiveFieldOfView(LIB_KATA::PI_DIV4, aspectRatio, 1.0f, 1000.0f, proj);
-	s_constantBufferData.Proj = proj;
-
-#endif
-	// コピーする(ここでコピーできるアライメントが256でないとNG)
-	memcpy(m_cbvDataBegin, &s_constantBufferData, sizeof(s_constantBufferData));
-
-	return hr;
-}
-void CRendererDx12::ReleaseConstantBuff()
-{
-	m_constantBuffer->Unmap(0, nullptr);
-
-	m_constantBuffer.Reset();
-	m_cbvHeap.Reset();
-
-	m_cbvDataBegin = nullptr;
-}
-
-void CRendererDx12::ReleasePipeline()
-{
-	m_pipelineState.Reset();
-}
-
-void CRendererDx12::ReleaseRootSignature()
-{
-	m_rootSignature.Reset();
 }
 
 HRESULT CRendererDx12::__WaitForPreviousFrame()

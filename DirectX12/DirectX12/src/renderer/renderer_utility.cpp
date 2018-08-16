@@ -63,6 +63,12 @@ void CRenderUtility::DrawPolygon(const RENDER_DRAW_POLYGON_PARAM& _param)
 	s_inst->DrawPolygon(_param);
 }
 
+void CRenderUtility::SetPipeline(const CPipeline* _pipe)
+{
+	Assert(s_inst);
+	s_inst->SetPipline(_pipe);
+}
+
 IRenderer* CRenderUtility::GetRenderer()
 {
 	return s_inst;

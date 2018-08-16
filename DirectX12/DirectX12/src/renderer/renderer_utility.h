@@ -1,11 +1,10 @@
 #pragma once
 
 class IRenderer;
-class CVertexBuff;
-class CIndexBuff;
+class CPipeline;
 struct RENDER_DRAW_POLYGON_PARAM;
 
-
+// •`‰æ‘Î‰ž
 enum class RENDERER_TYPE
 {
 	NONE = 0,
@@ -36,6 +35,9 @@ public:
 	static void Begin();
 
 	static void End();
+
+public:
+	static void SetPipeline(const CPipeline* _pipeline);
 
 public:
 	static void DrawPolygon(const RENDER_DRAW_POLYGON_PARAM& _param);

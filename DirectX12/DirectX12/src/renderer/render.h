@@ -5,6 +5,7 @@
 
 class CVertexBuff;
 class CIndexBuff;
+class CPipeline;
 
 /// ポリゴン描画用パラメータ
 struct RENDER_DRAW_POLYGON_PARAM
@@ -28,6 +29,9 @@ public:
 	virtual void EndDraw() = 0;
 
 public:
+	// パイプライン設定
+	virtual void SetPipline(const CPipeline* _pipline) = 0;
+
 	// ポリゴン描画
 	virtual void DrawPolygon(const RENDER_DRAW_POLYGON_PARAM& _drawParam) = 0;
 
@@ -52,6 +56,10 @@ public:
 	virtual void EndDraw() { }
 
 public:
+	// 
+	virtual void SetPipline(const CPipeline* _pipline) {};
+
+	// 
 	virtual void DrawPolygon(const RENDER_DRAW_POLYGON_PARAM& _drawParam) {}
 
 public:

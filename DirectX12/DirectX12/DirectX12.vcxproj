@@ -130,17 +130,20 @@
   <ItemGroup>
     <ClCompile Include="src\application.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\pipeline\pipeline.cpp" />
     <ClCompile Include="src\renderer\dx12\renderer_dx12.cpp" />
     <ClCompile Include="src\renderer\renderer_utility.cpp" />
+    <ClCompile Include="src\shader\shader.cpp" />
     <ClCompile Include="src\vertex_buff\vertex_buff.cpp" />
     <ClCompile Include="src\window\window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\application.h" />
+    <ClInclude Include="src\pipeline\pipeline.h" />
     <ClInclude Include="src\renderer\dx12\renderer_dx12.h" />
     <ClInclude Include="src\renderer\render.h" />
     <ClInclude Include="src\renderer\renderer_utility.h" />
-    <ClInclude Include="src\shader\shader_dx12.h" />
+    <ClInclude Include="src\shader\shader.h" />
     <ClInclude Include="src\vertex_buff\vertex_buff.h" />
     <ClInclude Include="src\window\window.h" />
   </ItemGroup>

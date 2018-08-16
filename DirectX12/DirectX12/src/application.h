@@ -24,4 +24,8 @@ private:
 private:
 	b8 InitializeApp();
 	void FinalizeApp();
+
+private:
+	void Update();
+	void Draw();
 };

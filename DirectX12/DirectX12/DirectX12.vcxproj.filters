@@ -26,6 +26,9 @@
     <Filter Include="src\vertex_buff">
       <UniqueIdentifier>{fe4f1a7b-984d-4f40-a846-a7abd5d827b4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\pipeline">
+      <UniqueIdentifier>{c4fffda6-593a-4ba1-84c9-bc96a9b73056}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -46,11 +49,14 @@
     <ClCompile Include="src\vertex_buff\vertex_buff.cpp">
       <Filter>src\vertex_buff</Filter>
     </ClCompile>
+    <ClCompile Include="src\shader\shader.cpp">
+      <Filter>src\shader</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pipeline\pipeline.cpp">
+      <Filter>src\pipeline</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\shader\shader_dx12.h">
-      <Filter>src\shader</Filter>
-    </ClInclude>
     <ClInclude Include="src\renderer\renderer_utility.h">
       <Filter>src\renderer</Filter>
     </ClInclude>
@@ -68,6 +74,12 @@
     </ClInclude>
     <ClInclude Include="src\vertex_buff\vertex_buff.h">
       <Filter>src\vertex_buff</Filter>
+    </ClInclude>
+    <ClInclude Include="src\shader\shader.h">
+      <Filter>src\shader</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pipeline\pipeline.h">
+      <Filter>src\pipeline</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
